@@ -1,0 +1,75 @@
+# ToVeno - requisitos do projeto
+#
+# Observacao:
+# Este nao e um projeto Python. Este arquivo existe como inventario geral de
+# requisitos do ambiente e das dependencias principais. As dependencias
+# instalaveis ficam nos package.json, pnpm-lock.yaml e no projeto .NET.
+
+# Ambiente base
+Node.js >= 22
+pnpm >= 9.15.0
+Docker Desktop
+Docker Compose
+PowerShell >= 5.1
+Git
+
+# Desktop Windows
+Windows 10 ou superior
+.NET SDK >= 9.0
+.NET Runtime >= 9.0
+Permissao do Windows para captura de tela
+Permissao do Windows para captura de audio do sistema
+
+# Infraestrutura local
+PostgreSQL 17-alpine
+LiveKit Server 1.8
+
+# Servicos externos
+Discord Developer Application
+Discord Bot Token
+LiveKit Cloud ou LiveKit self-hosted
+URL publica HTTPS para o app web quando usado por amigos fora da maquina local
+
+# Variaveis de ambiente obrigatorias
+DISCORD_CLIENT_ID
+DISCORD_BOT_TOKEN
+DISCORD_GUILD_ID
+DATABASE_URL
+LIVEKIT_URL
+LIVEKIT_PUBLIC_URL
+LIVEKIT_API_KEY
+LIVEKIT_API_SECRET
+APP_URL
+SESSION_SECRET
+
+# Dependencias Node principais
+@discord-screen/shared workspace
+discord.js ^14.17.3
+dotenv ^16.4.7
+livekit-client ^2.22.0
+livekit-server-sdk ^2.17.0
+next ^15.1.3
+react ^19.0.0
+react-dom ^19.0.0
+
+# Dependencias desktop/build
+electron ^38.4.0
+electron-builder ^26.15.3
+esbuild ^0.27.2
+typescript ^5.7.2
+tsx ^4.19.2
+@types/node ^22.10.2
+@types/react ^19.0.2
+@types/react-dom ^19.0.2
+
+# Dependencias .NET do audio helper
+NAudio 3.0.1
+NAudio.Wasapi 3.0.1
+
+# Comandos principais
+pnpm install
+docker compose -f infra/docker-compose.yml up -d
+pnpm dev
+pnpm typecheck
+pnpm build
+pnpm package:desktop
