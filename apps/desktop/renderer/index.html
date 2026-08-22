@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ToVeno Desktop</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="toolbar">
+        <div>
+          <p class="eyebrow">Transmissor avançado</p>
+          <h1>ToVeno Desktop</h1>
+        </div>
+        <span id="session-pill" class="session-pill">sem sessão</span>
+      </section>
+
+      <section class="workspace">
+        <section class="source-panel" aria-label="Fontes de captura">
+          <div class="panel-header">
+            <div>
+              <strong>Janelas e telas</strong>
+              <span>Escolha a fonte que será usada pela captura avançada.</span>
+            </div>
+            <button id="refresh-sources" type="button">Atualizar</button>
+          </div>
+          <div id="sources-grid" class="sources-grid">
+            <p class="empty-list">Carregando fontes...</p>
+          </div>
+        </section>
+
+        <aside class="control-panel">
+          <section class="stage compact">
+            <video id="preview-video" autoplay muted playsinline></video>
+            <div id="empty-state" class="empty-state">
+              <p id="status">Abra pelo botão Instalar/Abrir ToVeno em uma sessão do Discord.</p>
+            </div>
+          </section>
+
+          <section class="capture-summary">
+            <strong>Captura nativa</strong>
+            <span id="selected-source">
+              Escolha uma fonte para transmitir janela/jogo e áudio isolado.
+            </span>
+            <span id="diagnostics">Diagnóstico aguardando transmissão.</span>
+            <span class="hint-line">Para jogos, mantenha a janela visível; alguns jogos reduzem FPS quando ficam em segundo plano.</span>
+            <span class="hint-line">Tela inteira costuma ser mais fluida, mas pode não isolar áudio.</span>
+          </section>
+
+          <div class="settings-grid">
+            <label class="field-row">
+              <span>Internet</span>
+              <select id="bandwidth-profile-select">
+                <option value="humble" selected>Humilde</option>
+                <option value="bold">Desumilde</option>
+              </select>
+            </label>
+            <label class="field-row">
+              <span>Qualidade</span>
+              <select id="quality-select">
+                <option value="p480" selected>480p</option>
+                <option value="p720">720p</option>
+                <option value="p1080">1080p</option>
+              </select>
+            </label>
+            <label class="field-row">
+              <span>FPS</span>
+              <select id="fps-select">
+                <option value="30" selected>30 FPS</option>
+                <option value="60">60 FPS</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="toggles">
+            <label class="checkbox-row">
+              <input id="capture-audio" type="checkbox" checked />
+              <span>Capturar áudio</span>
+            </label>
+            <label class="checkbox-row">
+              <input id="show-preview" type="checkbox" />
+              <span>Mostrar prévia local</span>
+            </label>
+          </div>
+
+          <div class="actions">
+            <button id="start-preview" type="button">Iniciar prévia</button>
+            <button id="start-broadcast" type="button">Iniciar transmissão</button>
+            <button id="stop-capture" class="danger" type="button" disabled>Parar</button>
+            <button id="open-web" type="button">Abrir transmissor web</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

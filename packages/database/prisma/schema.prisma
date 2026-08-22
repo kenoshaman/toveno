@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  discordUserId String   @unique
+  username      String
+  avatarUrl     String?
+  createdAt     DateTime @default(now())
+  lastLoginAt   DateTime?
+
+  ownedStreams  StreamSession[] @relation("StreamOwner")
+  views         StreamViewer[]
+}
+
+model Guild {
+  id             String   @id @default(cuid())
+  discordGuildId String   @unique
+  name           String
+  createdAt      DateTime @default(now())
+
+  streams        StreamSession[]
+}
+
+model StreamSession {
+  id              String              @id @default(cuid())
+  guildId         String
+  voiceChannelId  String
+  ownerUserId     String
+  livekitRoomName String              @unique
+  status          StreamSessionStatus @default(CREATED)
+  createdAt       DateTime            @default(now())
+  startedAt       DateTime?
+  endedAt         DateTime?
+
+  guild           Guild               @relation(fields: [guildId], references: [id])
+  owner           User                @relation("StreamOwner", fields: [ownerUserId], references: [id])
+  viewers         StreamViewer[]
+}
+
+model StreamViewer {
+  id        String    @id @default(cuid())
+  sessionId String
+  userId    String
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+
+  session   StreamSession @relation(fields: [sessionId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+}
+
+enum StreamSessionStatus {
+  CREATED
+  WAITING_FOR_PUBLISHER
+  LIVE
+  ENDED
+}

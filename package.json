@@ -1,0 +1,21 @@
+{
+  "name": "discord-screen",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @discord-screen/shared build && pnpm -r --parallel dev",
+    "dev:web": "pnpm --filter @discord-screen/shared build && pnpm --filter @discord-screen/web dev",
+    "dev:bot": "pnpm --filter @discord-screen/shared build && pnpm --filter @discord-screen/bot dev",
+    "dev:desktop": "pnpm --filter @discord-screen/desktop dev",
+    "build": "pnpm --filter @discord-screen/shared build && pnpm --filter @discord-screen/database build && pnpm --filter @discord-screen/bot build && pnpm --filter @discord-screen/web build && pnpm --filter @discord-screen/desktop build",
+    "lint": "pnpm --filter @discord-screen/shared typecheck && pnpm --filter @discord-screen/database typecheck && pnpm --filter @discord-screen/bot typecheck && pnpm --filter @discord-screen/web typecheck && pnpm --filter @discord-screen/desktop typecheck",
+    "typecheck": "pnpm --filter @discord-screen/shared build && pnpm --filter @discord-screen/database typecheck && pnpm --filter @discord-screen/bot typecheck && pnpm --filter @discord-screen/web typecheck && pnpm --filter @discord-screen/desktop typecheck",
+    "package:desktop": "powershell -ExecutionPolicy Bypass -File scripts/package-desktop.ps1",
+    "set:public-url": "powershell -ExecutionPolicy Bypass -File scripts/set-public-url.ps1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

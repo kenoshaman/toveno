@@ -1,0 +1,63 @@
+{
+  "name": "@discord-screen/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "commonjs",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && esbuild renderer/renderer.ts --bundle --format=iife --platform=browser --target=chrome120 --outfile=renderer/renderer.js",
+    "dev": "pnpm build && powershell -ExecutionPolicy Bypass -Command \"Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue; electron .\"",
+    "package:win": "pnpm build && electron-builder --win nsis --x64",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "build": {
+    "appId": "br.com.toveno.desktop",
+    "productName": "ToVeno",
+    "artifactName": "ToVeno-Setup-${version}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "renderer/**/*",
+      "package.json",
+      "build/app-url.txt"
+    ],
+    "extraResources": [
+      {
+        "from": "../audio-helper/bin/publish/win-x64",
+        "to": "audio-helper",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "protocols": [
+      {
+        "name": "ToVeno",
+        "schemes": [
+          "toveno"
+        ]
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ToVeno"
+    }
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "livekit-client": "^2.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "electron": "^38.4.0",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.27.2",
+    "typescript": "^5.7.2"
+  }
+}
