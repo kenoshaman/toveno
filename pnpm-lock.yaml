@@ -39,9 +39,6 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
-      electron:
-        specifier: ^38.4.0
-        version: 38.8.6
       livekit-client:
         specifier: ^2.22.0
         version: 2.22.0(@types/dom-mediacapture-record@1.0.22)
@@ -49,6 +46,9 @@ importers:
       '@types/node':
         specifier: ^22.10.2
         version: 22.20.1
+      electron:
+        specifier: ^38.4.0
+        version: 38.8.6
       electron-builder:
         specifier: ^26.15.3
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)

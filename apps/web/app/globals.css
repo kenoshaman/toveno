@@ -96,7 +96,8 @@ dd {
   border: 1px solid #26323a;
   display: flex;
   justify-content: center;
-  min-height: 260px;
+  margin: 0 auto;
+  max-width: 960px;
   overflow: hidden;
   position: relative;
   width: 100%;
@@ -269,7 +270,7 @@ button.danger {
 }
 
 .compact-stage {
-  min-height: 360px;
+  max-width: 640px;
 }
 
 .transmit-panel {

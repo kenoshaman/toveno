@@ -180,7 +180,7 @@ export function WatchScreen({ sessionId }: WatchScreenProps) {
       <section className="toolbar">
         <div>
           <p className="eyebrow">Player</p>
-          <h1>Assistir tela</h1>
+          <h1>Assistir transmissão</h1>
         </div>
         <span className="session-pill">{sessionId}</span>
       </section>
