@@ -1,11 +1,13 @@
 import { AccessToken } from "livekit-server-sdk";
 import { NextResponse } from "next/server";
+import { verifySessionPassword } from "@/lib/session-passwords";
 
 export const runtime = "nodejs";
 
 type TokenRequest = {
   sessionId?: string;
   role?: "publisher" | "viewer";
+  password?: string;
 };
 
 export async function POST(request: Request) {
@@ -24,6 +26,13 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "sessionId and role are required." },
       { status: 400 },
+    );
+  }
+
+  if (role === "viewer" && !verifySessionPassword(sessionId, body.password)) {
+    return NextResponse.json(
+      { error: "Senha incorreta para esta sala privada." },
+      { status: 401 },
     );
   }
 

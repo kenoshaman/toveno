@@ -8,7 +8,17 @@ import {
   RoomEvent,
   Track,
 } from "livekit-client";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { StatusBubble } from "@/components/status-bubble";
+import { PlayerControls } from "@/components/player-controls";
+import {
+  clearRoomVerification,
+  getStoredRoomPassword,
+  ROOM_GATE_EVENT,
+  ROOM_PRIVACY_UPDATED_MESSAGE,
+  type RoomGateEventDetail,
+} from "@/lib/session-gate";
 
 type WatchScreenProps = {
   sessionId: string;
@@ -16,12 +26,15 @@ type WatchScreenProps = {
 
 export function WatchScreen({ sessionId }: WatchScreenProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const roomRef = useRef<Room | null>(null);
   const currentVideoTrackRef = useRef<RemoteTrack | null>(null);
   const currentPublisherRef = useRef<string | null>(null);
   const statsIntervalRef = useRef<number | null>(null);
   const previousStatsRef = useRef<StatsSample | null>(null);
+  const connectRef = useRef<() => Promise<void>>(async () => {});
+  const isConnectedOrConnectingRef = useRef(false);
   const [status, setStatus] = useState("Conectando ao LiveKit...");
   const [diagnostics, setDiagnostics] = useState("Diagnóstico aguardando vídeo.");
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +46,14 @@ export function WatchScreen({ sessionId }: WatchScreenProps) {
     let isMounted = true;
 
     async function connect() {
+      if (isConnectedOrConnectingRef.current) {
+        return;
+      }
+      isConnectedOrConnectingRef.current = true;
+
       try {
-        const { token, url } = await createLiveKitToken(sessionId, "viewer");
+        const password = getStoredRoomPassword(sessionId) ?? undefined;
+        const { token, url } = await createLiveKitToken(sessionId, "viewer", password);
         const room = new Room();
         roomRef.current = room;
 
@@ -126,12 +145,25 @@ export function WatchScreen({ sessionId }: WatchScreenProps) {
           setStatus(`Desconectado do LiveKit: ${reason ?? "sem motivo informado"}.`);
         });
 
+        room.on(RoomEvent.DataReceived, (payload) => {
+          try {
+            const message = JSON.parse(new TextDecoder().decode(payload)) as { type?: string };
+            if (message.type === ROOM_PRIVACY_UPDATED_MESSAGE) {
+              clearRoomVerification(sessionId);
+              window.location.reload();
+            }
+          } catch {
+            // Mensagem em formato inesperado; ignora.
+          }
+        });
+
         await room.connect(url, token);
 
         if (isMounted) {
           setStatus("Aguardando vídeo do transmissor.");
         }
       } catch {
+        isConnectedOrConnectingRef.current = false;
         if (isMounted) {
           setError("Não foi possível conectar ao LiveKit.");
           setStatus("Falha de conexão.");
@@ -139,10 +171,12 @@ export function WatchScreen({ sessionId }: WatchScreenProps) {
       }
     }
 
+    connectRef.current = connect;
     void connect();
 
     return () => {
       isMounted = false;
+      isConnectedOrConnectingRef.current = false;
       roomRef.current?.disconnect();
       roomRef.current = null;
       currentVideoTrackRef.current?.detach();
@@ -150,6 +184,18 @@ export function WatchScreen({ sessionId }: WatchScreenProps) {
       currentPublisherRef.current = null;
       stopInboundDiagnostics();
     };
+  }, [sessionId]);
+
+  useEffect(() => {
+    function handleRoomGatePassed(event: Event) {
+      const detail = (event as CustomEvent<RoomGateEventDetail>).detail;
+      if (detail?.sessionId === sessionId) {
+        void connectRef.current();
+      }
+    }
+
+    window.addEventListener(ROOM_GATE_EVENT, handleRoomGatePassed);
+    return () => window.removeEventListener(ROOM_GATE_EVENT, handleRoomGatePassed);
   }, [sessionId]);
 
   async function startVideoPlayback() {
@@ -176,21 +222,12 @@ export function WatchScreen({ sessionId }: WatchScreenProps) {
   }
 
   return (
-    <main className="app-shell">
-      <section className="toolbar">
-        <div>
-          <p className="eyebrow">Player</p>
-          <h1>Assistir transmissão</h1>
-        </div>
-        <span className="session-pill">{sessionId}</span>
-      </section>
-
-      <section className="stage" aria-label="Player da transmissão">
+    <main className="app-shell watch-shell">
+      <section className="stage stage-max" aria-label="Player da transmissão" ref={stageRef}>
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          controls
           onLoadedData={() => {
             setHasVideo(true);
             setStatus("Assistindo transmissão.");
@@ -206,30 +243,43 @@ export function WatchScreen({ sessionId }: WatchScreenProps) {
         <audio ref={audioRef} autoPlay />
         {!hasVideo ? (
           <div className="empty-state">
-            <p>{status}</p>
             {needsUserPlay ? (
-              <button type="button" onClick={startVideoPlayback}>
-                Iniciar vídeo
-              </button>
-            ) : null}
+              <>
+                <p>{status}</p>
+                <button type="button" className="plain-button" onClick={startVideoPlayback}>
+                  Iniciar vídeo
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="plug-figure sketchy-round">
+                  <Image
+                    src="/icon/raccoon_plugs_full.svg"
+                    alt=""
+                    width={168}
+                    height={168}
+                    className="plug-figure-img"
+                  />
+                  <span className="plug-spinner" aria-hidden />
+                </div>
+                <p className="plug-caption">Puxaro Cabo</p>
+              </>
+            )}
           </div>
         ) : null}
-      </section>
 
-      <section className="controls">
-        <div>
-          <strong>Status</strong>
-          <span>{status}</span>
-          <span>{diagnostics}</span>
+        <div className="stage-status-corner">
+          <StatusBubble live={hasVideo} status={status} error={error} />
         </div>
-        {needsAudioPlay ? (
-          <button type="button" onClick={startAudioPlayback}>
-            Ativar áudio
-          </button>
-        ) : null}
+
+        {hasVideo ? <PlayerControls videoRef={videoRef} stageRef={stageRef} /> : null}
       </section>
 
-      {error ? <p className="error">{error}</p> : null}
+      {needsAudioPlay ? (
+        <button type="button" className="plain-button audio-fab" onClick={startAudioPlayback}>
+          Ativar áudio
+        </button>
+      ) : null}
     </main>
   );
 
@@ -328,13 +378,14 @@ function formatBitrate(bitrate: number) {
 async function createLiveKitToken(
   sessionId: string,
   role: "publisher" | "viewer",
+  password?: string,
 ): Promise<{ token: string; url: string }> {
   const response = await fetch("/api/livekit/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ sessionId, role }),
+    body: JSON.stringify({ sessionId, role, password }),
   });
 
   if (!response.ok) {

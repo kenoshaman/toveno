@@ -1,7 +1,24 @@
 "use client";
 
 import { LocalVideoTrack, Room } from "livekit-client";
+import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LoadingDots } from "@/components/loading-dots";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { ROOM_PRIVACY_UPDATED_MESSAGE } from "@/lib/session-gate";
 
 type TransmitScreenProps = {
   sessionId: string;
@@ -67,6 +84,32 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
   const [quality, setQuality] = useState<QualityKey>("p480");
   const [fps, setFps] = useState<FpsValue>(30);
   const [shareAudio, setShareAudio] = useState(true);
+  const [isPrivateRoom, setIsPrivateRoom] = useState(false);
+  const [roomPassword, setRoomPassword] = useState("");
+  const [showRoomPassword, setShowRoomPassword] = useState(false);
+
+  useEffect(() => {
+    if (!isPrivateRoom) {
+      void syncRoomPrivacy(sessionId, null);
+    }
+  }, [isPrivateRoom, sessionId]);
+
+  async function applyRoomPrivacy() {
+    if (isPrivateRoom && !roomPassword.trim()) {
+      setError("Defina uma senha para a sala privada.");
+      return;
+    }
+
+    await syncRoomPrivacy(sessionId, isPrivateRoom ? roomPassword.trim() : null);
+
+    const room = roomRef.current;
+    if (room) {
+      const payload = new TextEncoder().encode(
+        JSON.stringify({ type: ROOM_PRIVACY_UPDATED_MESSAGE }),
+      );
+      void room.localParticipant.publishData(payload, { reliable: true });
+    }
+  }
 
   useEffect(() => {
     setAppOrigin(window.location.origin);
@@ -123,10 +166,20 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
       return;
     }
 
+    if (isPrivateRoom && !roomPassword.trim()) {
+      setError("Defina uma senha para a sala privada.");
+      setStatus("Configure a senha para continuar.");
+      isStartingRef.current = false;
+      setIsStarting(false);
+      return;
+    }
+
     try {
       if (roomRef.current) {
         await stopSharing();
       }
+
+      await syncRoomPrivacy(sessionId, isPrivateRoom ? roomPassword : null);
 
       const { token, url } = await createLiveKitToken(sessionId, "publisher");
       const room = new Room({
@@ -207,6 +260,7 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
     setIsSharing(false);
     setIsConnected(false);
     setStatus("480p / 30 FPS");
+    void syncRoomPrivacy(sessionId, null);
   }
 
   function startOutboundDiagnostics(track: LocalVideoTrack) {
@@ -284,122 +338,204 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
 
   return (
     <main className="app-shell">
-      <section className="toolbar">
+      <section className="toolbar shrink-0">
         <div>
           <p className="eyebrow">Transmissor</p>
           <h1>Compartilhar tela</h1>
         </div>
-        <span className="session-pill">{sessionId}</span>
       </section>
 
-      <section className="transmit-layout">
-        <section className="browser-preview">
-          <section className="stage compact-stage" aria-label="Prévia da tela compartilhada">
-            <video ref={videoRef} autoPlay muted playsInline />
-            {!isSharing ? (
-              <div className="empty-state">
-                <p>Nenhuma tela selecionada.</p>
-              </div>
-            ) : null}
-          </section>
-        </section>
-
-        <aside className="transmit-panel">
-          <section className="panel-block">
-            <strong>Compartilhar pelo navegador</strong>
-            <span>{isConnected ? status : "Configure e clique em Compartilhar."}</span>
-
-            <div className="browser-settings" aria-label="Configurações da transmissão">
-              <label>
-                <span>Internet</span>
-                <select
-                  value={bandwidthProfile}
-                  disabled={isSharing}
-                  onChange={(event) =>
-                    setBandwidthProfile(event.target.value as BandwidthProfileKey)
-                  }
-                >
-                  <option value="humble">Humilde</option>
-                  <option value="bold">Desumilde</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Qualidade</span>
-                <select
-                  value={quality}
-                  disabled={isSharing}
-                  onChange={(event) => setQuality(event.target.value as QualityKey)}
-                >
-                  {Object.entries(qualityPresets).map(([key, preset]) => (
-                    <option key={key} value={key}>
-                      {preset.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                <span>FPS</span>
-                <select
-                  value={fps}
-                  disabled={isSharing}
-                  onChange={(event) => setFps(Number(event.target.value) as FpsValue)}
-                >
-                  <option value={30}>30 FPS</option>
-                  <option value={60}>60 FPS</option>
-                </select>
-              </label>
-
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={shareAudio}
-                  disabled={isSharing}
-                  onChange={(event) => setShareAudio(event.target.checked)}
-                />
-                <span>Compartilhar áudio da tela</span>
-              </label>
-            </div>
-
-            {shareAudio && !isSharing ? (
-              <p className="hint">
-                Para áudio confiável no navegador, escolha Guia do Chrome no seletor.
-              </p>
-            ) : null}
-
-            <div className="button-stack">
+      <section className="min-h-0 flex-1">
+        <div className="transmit-group">
+          <div className="transmit-group-inner">
+            <div className="transmit-stage-pane" aria-label="Prévia da tela compartilhada">
+              <video ref={videoRef} autoPlay muted playsInline />
               {!isSharing ? (
-                <button type="button" disabled={isStarting} onClick={startSharing}>
+                <div className="empty-state">
+                  <p>{isStarting ? "Iniciando transmissão..." : "Nenhuma tela selecionada."}</p>
+                  <LoadingDots />
+                </div>
+              ) : null}
+            </div>
+
+            <div className="transmit-settings-pane">
+            <CardHeader>
+              <CardTitle>Compartilhar pelo navegador</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {isConnected ? status : "Configure e clique em Compartilhar."}
+              </p>
+            </CardHeader>
+
+            <CardContent className="flex flex-col gap-4">
+              <div
+                className="grid grid-cols-2 gap-3"
+                aria-label="Configurações da transmissão"
+              >
+                <div className="flex flex-col gap-1.5">
+                  <Label>Internet</Label>
+                  <Select
+                    value={bandwidthProfile}
+                    disabled={isSharing}
+                    onValueChange={(value) =>
+                      setBandwidthProfile(value as BandwidthProfileKey)
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="humble">Humilde</SelectItem>
+                      <SelectItem value="bold">Desumilde</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label>Qualidade</Label>
+                  <Select
+                    value={quality}
+                    disabled={isSharing}
+                    onValueChange={(value) => setQuality(value as QualityKey)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(qualityPresets).map(([key, preset]) => (
+                        <SelectItem key={key} value={key}>
+                          {preset.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label>FPS</Label>
+                  <Select
+                    value={String(fps)}
+                    disabled={isSharing}
+                    onValueChange={(value) => setFps(Number(value) as FpsValue)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 FPS</SelectItem>
+                      <SelectItem value="60">60 FPS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col justify-end gap-1.5">
+                  <Label htmlFor="share-audio" className="justify-between">
+                    Áudio da tela
+                    <Switch
+                      id="share-audio"
+                      checked={shareAudio}
+                      disabled={isSharing}
+                      onCheckedChange={(checked) => setShareAudio(checked)}
+                    />
+                  </Label>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="private-room" className="justify-between">
+                  Criar sala privada
+                  <Switch
+                    id="private-room"
+                    checked={isPrivateRoom}
+                    onCheckedChange={(checked) => setIsPrivateRoom(checked)}
+                  />
+                </Label>
+
+                {isPrivateRoom ? (
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type={showRoomPassword ? "text" : "password"}
+                        value={roomPassword}
+                        onChange={(event) => setRoomPassword(event.target.value)}
+                        placeholder="Senha da sala"
+                        autoComplete="new-password"
+                        className="pr-9"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRoomPassword((value) => !value)}
+                        className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                        aria-label={showRoomPassword ? "Ocultar senha" : "Mostrar senha"}
+                        tabIndex={-1}
+                      >
+                        {showRoomPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    <Button type="button" variant="outline" onClick={applyRoomPrivacy}>
+                      Atualizar
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+
+              {!isSharing ? (
+                <Button
+                  type="button"
+                  disabled={isStarting}
+                  onClick={startSharing}
+                  className="w-full"
+                >
                   {isStarting ? "Iniciando..." : "Compartilhar pelo navegador"}
-                </button>
+                </Button>
               ) : (
-                <button type="button" className="danger" onClick={stopSharing}>
+                <Button
+                  type="button"
+                  onClick={stopSharing}
+                  className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
                   Parar transmissão
-                </button>
+                </Button>
               )}
-            </div>
-          </section>
+            </CardContent>
 
-          <section className="panel-block status-block">
-            <strong>Status</strong>
-            <span>{status}</span>
-            <span>{diagnostics}</span>
-          </section>
+            <Separator />
 
-          <section className="panel-block desktop-secondary">
-            <strong>ToVeno Desktop</strong>
-            <span>Opcional para jogos, janelas e áudio de aplicativo.</span>
-            <div className="button-stack">
-              <a className="button-link secondary" href={desktopOpenUrl}>
-                Abrir ToVeno
-              </a>
-              <a className="button-link secondary" href="/downloads/ToVeno-Setup.exe">
-                Instalar ToVeno
-              </a>
+            <CardHeader className="gap-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`size-2 rounded-full ${
+                    isConnected ? "bg-primary" : "bg-muted-foreground/40"
+                  }`}
+                  aria-hidden
+                />
+                <CardTitle>Status</CardTitle>
+                <Badge variant={isConnected ? "default" : "secondary"}>
+                  {isConnected ? "Ao vivo" : "Parado"}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{status}</p>
+              <p className="text-sm text-muted-foreground">{diagnostics}</p>
+            </CardHeader>
+
+            <Separator />
+
+            <CardHeader className="gap-2 opacity-90">
+              <CardTitle>ToVeno Desktop</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Opcional para jogos, janelas e áudio de aplicativo.
+              </p>
+              <div className="flex flex-col gap-2 pt-1">
+                <Button asChild variant="outline" className="w-full">
+                  <a href={desktopOpenUrl}>Abrir ToVeno</a>
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <a href="/downloads/ToVeno-Setup.exe">Instalar ToVeno</a>
+                </Button>
+              </div>
+            </CardHeader>
             </div>
-          </section>
-        </aside>
+          </div>
+        </div>
       </section>
 
       {error ? <p className="error">{error}</p> : null}
@@ -435,6 +571,20 @@ function isLiveKitShareError(message: string): boolean {
 
 function formatBitrate(bitrate: number) {
   return `${bitrate / 1_000_000} Mbps`;
+}
+
+async function syncRoomPrivacy(sessionId: string, password: string | null) {
+  try {
+    await fetch(`/api/session/${encodeURIComponent(sessionId)}/private`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ password }),
+    });
+  } catch {
+    // Falha ao sincronizar a privacidade não deve travar o compartilhamento.
+  }
 }
 
 async function createLiveKitToken(
