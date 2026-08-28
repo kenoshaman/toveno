@@ -48,16 +48,20 @@ client.once("ready", (readyClient) => {
 });
 
 client.on("interactionCreate", async (interaction) => {
-  if (interaction.isChatInputCommand()) {
-    if (interaction.commandName === "tela") {
-      await handleTelaCommand(interaction);
-      return;
-    }
+  try {
+    if (interaction.isChatInputCommand()) {
+      if (interaction.commandName === "tela") {
+        await handleTelaCommand(interaction);
+        return;
+      }
 
-    if (interaction.commandName === "encerrar") {
-      await handleEncerrarCommand(interaction);
-      return;
+      if (interaction.commandName === "encerrar") {
+        await handleEncerrarCommand(interaction);
+        return;
+      }
     }
+  } catch (error) {
+    console.error("Command interaction failed.", error);
   }
 });
 
