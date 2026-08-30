@@ -1,0 +1,17 @@
+{
+  "name": "ToVeno",
+  "short_name": "ToVeno",
+  "description": "Compartilhamento de tela privado controlado pelo Discord.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "icons": [
+    {
+      "src": "/icon/raccoon_logo_round.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

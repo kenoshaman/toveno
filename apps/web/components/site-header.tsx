@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Caveat } from "next/font/google";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { NotificationToggle } from "@/components/notification-toggle";
 
 const caveat = Caveat({ subsets: ["latin"], weight: "700" });
 
@@ -23,6 +24,9 @@ export function SiteHeader() {
       <span className={cn(caveat.className, "sketchy-text text-3xl text-foreground")}>
         {wordmark}
       </span>
+      <div className="ml-auto">
+        <NotificationToggle />
+      </div>
     </header>
   );
 }

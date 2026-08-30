@@ -117,6 +117,8 @@ dd {
   align-items: center;
   aspect-ratio: 16 / 9;
   background: #050506;
+  container-name: stage;
+  container-type: inline-size;
   display: flex;
   justify-content: center;
   margin: 0 auto;
@@ -147,18 +149,19 @@ dd {
   background: var(--card);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: clamp(8px, 4cqi, 16px);
   inset: 0;
   justify-content: center;
-  padding: 24px;
+  overflow: hidden;
+  padding: clamp(10px, 5cqi, 24px);
   position: absolute;
   text-align: center;
 }
 
 .plug-figure {
-  height: 168px;
+  height: clamp(64px, 30cqi, 168px);
   position: relative;
-  width: 168px;
+  width: clamp(64px, 30cqi, 168px);
 }
 
 .plug-figure::before {
@@ -181,7 +184,7 @@ dd {
   border-top-color: var(--primary);
   border-right-color: var(--primary);
   filter: url(#toveno-sketchy-text);
-  inset: -16px;
+  inset: -9.5%;
   position: absolute;
 }
 
@@ -193,7 +196,7 @@ dd {
 
 .plug-caption {
   color: var(--foreground);
-  font-size: 21px;
+  font-size: clamp(14px, 6cqi, 21px);
   font-weight: 700;
   margin: 0;
 }
@@ -305,14 +308,27 @@ dd {
   flex-direction: column;
   flex-shrink: 0;
   gap: 20px;
-  overflow: hidden;
+  min-height: 0;
+  overflow-y: auto;
   padding: 20px 0;
   width: 380px;
 }
 
 @media (max-width: 900px) {
+  .app-shell {
+    overflow-y: auto;
+  }
+
+  .transmit-group {
+    height: auto;
+    min-height: 100%;
+  }
+
   .transmit-group-inner {
     flex-direction: column;
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
   }
 
   .transmit-stage-pane {
@@ -325,8 +341,16 @@ dd {
   .transmit-settings-pane {
     border-left: 0;
     border-top: 1px solid var(--border);
-    overflow-y: auto;
+    overflow-y: visible;
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .transmit-settings-pane {
+    --card-spacing: 0.75rem;
+    gap: 14px;
+    padding: 14px 0;
   }
 }
 
@@ -380,6 +404,34 @@ dd {
 .player-controls:focus-within {
   opacity: 1;
   pointer-events: auto;
+}
+
+.notification-toggle {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  height: 36px;
+  justify-content: center;
+  padding: 0;
+  width: 36px;
+}
+
+.notification-toggle:hover {
+  color: var(--primary);
+}
+
+.notification-toggle[aria-pressed="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.notification-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .player-control-btn {

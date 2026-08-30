@@ -1,11 +1,19 @@
 "use client";
 
 import { LocalVideoTrack, Room } from "livekit-client";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Monitor } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingDots } from "@/components/loading-dots";
@@ -19,6 +27,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { ROOM_PRIVACY_UPDATED_MESSAGE } from "@/lib/session-gate";
+
+const DIAGNOSTICS_IDLE_MESSAGE = "Diagnóstico aguardando transmissão.";
 
 type TransmitScreenProps = {
   sessionId: string;
@@ -77,7 +87,7 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
   const [isStarting, setIsStarting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [status, setStatus] = useState("480p / 30 FPS");
-  const [diagnostics, setDiagnostics] = useState("Diagnóstico aguardando transmissão.");
+  const [diagnostics, setDiagnostics] = useState(DIAGNOSTICS_IDLE_MESSAGE);
   const [error, setError] = useState<string | null>(null);
   const [bandwidthProfile, setBandwidthProfile] =
     useState<BandwidthProfileKey>("humble");
@@ -279,7 +289,7 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
 
     statsIntervalRef.current = null;
     previousStatsRef.current = null;
-    setDiagnostics("Diagnóstico aguardando transmissão.");
+    setDiagnostics(DIAGNOSTICS_IDLE_MESSAGE);
   }
 
   async function collectOutboundDiagnostics(track: LocalVideoTrack) {
@@ -341,7 +351,7 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
       <section className="toolbar shrink-0">
         <div>
           <p className="eyebrow">Transmissor</p>
-          <h1>Compartilhar tela</h1>
+          <h1 className="max-[900px]:hidden">Compartilhar tela</h1>
         </div>
       </section>
 
@@ -361,18 +371,22 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
             <div className="transmit-settings-pane">
             <CardHeader>
               <CardTitle>Compartilhar pelo navegador</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {isConnected ? status : "Configure e clique em Compartilhar."}
-              </p>
+              {isConnected ? (
+                <p className="text-sm text-muted-foreground">{status}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground max-[900px]:hidden">
+                  Configure e clique em Compartilhar.
+                </p>
+              )}
             </CardHeader>
 
             <CardContent className="flex flex-col gap-4">
               <div
-                className="grid grid-cols-2 gap-3"
+                className="grid grid-cols-3 gap-2"
                 aria-label="Configurações da transmissão"
               >
-                <div className="flex flex-col gap-1.5">
-                  <Label>Internet</Label>
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <Label className="text-xs">Internet</Label>
                   <Select
                     value={bandwidthProfile}
                     disabled={isSharing}
@@ -390,8 +404,8 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
                   </Select>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <Label>Qualidade</Label>
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <Label className="text-xs">Qualidade</Label>
                   <Select
                     value={quality}
                     disabled={isSharing}
@@ -410,8 +424,8 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
                   </Select>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <Label>FPS</Label>
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <Label className="text-xs">FPS</Label>
                   <Select
                     value={String(fps)}
                     disabled={isSharing}
@@ -426,19 +440,17 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="flex flex-col justify-end gap-1.5">
-                  <Label htmlFor="share-audio" className="justify-between">
-                    Áudio da tela
-                    <Switch
-                      id="share-audio"
-                      checked={shareAudio}
-                      disabled={isSharing}
-                      onCheckedChange={(checked) => setShareAudio(checked)}
-                    />
-                  </Label>
-                </div>
               </div>
+
+              <Label htmlFor="share-audio" className="justify-between text-sm">
+                Áudio da tela
+                <Switch
+                  id="share-audio"
+                  checked={shareAudio}
+                  disabled={isSharing}
+                  onCheckedChange={(checked) => setShareAudio(checked)}
+                />
+              </Label>
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="private-room" className="justify-between">
@@ -496,11 +508,36 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
                   Parar transmissão
                 </Button>
               )}
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button type="button" variant="outline" className="w-full">
+                    <Monitor size={16} />
+                    ToVeno Desktop
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>ToVeno Desktop</DialogTitle>
+                    <DialogDescription>
+                      Opcional para jogos, janelas e áudio de aplicativo.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-2">
+                    <Button asChild variant="outline" className="w-full">
+                      <a href={desktopOpenUrl}>Abrir ToVeno</a>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full">
+                      <a href="/downloads/ToVeno-Setup.exe">Instalar ToVeno</a>
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardContent>
 
             <Separator />
 
-            <CardHeader className="gap-2">
+            <CardContent className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <span
                   className={`size-2 rounded-full ${
@@ -508,31 +545,16 @@ export function TransmitScreen({ sessionId }: TransmitScreenProps) {
                   }`}
                   aria-hidden
                 />
-                <CardTitle>Status</CardTitle>
-                <Badge variant={isConnected ? "default" : "secondary"}>
+                <span className="text-sm font-medium">Status</span>
+                <Badge variant={isConnected ? "default" : "secondary"} className="ml-auto">
                   {isConnected ? "Ao vivo" : "Parado"}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">{status}</p>
-              <p className="text-sm text-muted-foreground">{diagnostics}</p>
-            </CardHeader>
-
-            <Separator />
-
-            <CardHeader className="gap-2 opacity-90">
-              <CardTitle>ToVeno Desktop</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Opcional para jogos, janelas e áudio de aplicativo.
-              </p>
-              <div className="flex flex-col gap-2 pt-1">
-                <Button asChild variant="outline" className="w-full">
-                  <a href={desktopOpenUrl}>Abrir ToVeno</a>
-                </Button>
-                <Button asChild variant="outline" className="w-full">
-                  <a href="/downloads/ToVeno-Setup.exe">Instalar ToVeno</a>
-                </Button>
-              </div>
-            </CardHeader>
+              <p className="text-xs text-muted-foreground">{status}</p>
+              {diagnostics !== DIAGNOSTICS_IDLE_MESSAGE ? (
+                <p className="text-xs text-muted-foreground">{diagnostics}</p>
+              ) : null}
+            </CardContent>
             </div>
           </div>
         </div>

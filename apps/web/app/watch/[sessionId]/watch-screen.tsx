@@ -272,7 +272,9 @@ export function WatchScreen({ sessionId }: WatchScreenProps) {
           <StatusBubble live={hasVideo} status={status} error={error} />
         </div>
 
-        {hasVideo ? <PlayerControls videoRef={videoRef} stageRef={stageRef} /> : null}
+        {hasVideo ? (
+          <PlayerControls videoRef={videoRef} audioRef={audioRef} stageRef={stageRef} />
+        ) : null}
       </section>
 
       {needsAudioPlay ? (

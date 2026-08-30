@@ -5,10 +5,11 @@ import { type RefObject, useEffect, useState } from "react";
 
 type PlayerControlsProps = {
   videoRef: RefObject<HTMLVideoElement | null>;
+  audioRef: RefObject<HTMLAudioElement | null>;
   stageRef: RefObject<HTMLElement | null>;
 };
 
-export function PlayerControls({ videoRef, stageRef }: PlayerControlsProps) {
+export function PlayerControls({ videoRef, audioRef, stageRef }: PlayerControlsProps) {
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -51,11 +52,16 @@ export function PlayerControls({ videoRef, stageRef }: PlayerControlsProps) {
 
   function toggleMute() {
     const video = videoRef.current;
-    if (!video) {
-      return;
+    const audio = audioRef.current;
+    const nextMuted = !muted;
+
+    if (video) {
+      video.muted = nextMuted;
     }
-    video.muted = !video.muted;
-    setMuted(video.muted);
+    if (audio) {
+      audio.muted = nextMuted;
+    }
+    setMuted(nextMuted);
   }
 
   function handleVolumeChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -63,11 +69,17 @@ export function PlayerControls({ videoRef, stageRef }: PlayerControlsProps) {
     setVolume(value);
 
     const video = videoRef.current;
+    const audio = audioRef.current;
+
     if (video) {
       video.volume = value;
       video.muted = value === 0;
-      setMuted(value === 0);
     }
+    if (audio) {
+      audio.volume = value;
+      audio.muted = value === 0;
+    }
+    setMuted(value === 0);
   }
 
   async function toggleFullscreen() {
